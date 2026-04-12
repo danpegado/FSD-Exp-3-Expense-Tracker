@@ -12,6 +12,13 @@ let connectPromise = null;
 app.use(cors());
 app.use(express.json());
 
+app.use((req, _res, next) => {
+    if (req.url.startsWith('/api/')) {
+        req.url = req.url.replace(/^\/api/, '') || '/';
+    }
+    next();
+});
+
 const connectDB = async () => {
     if (mongoose.connections[0].readyState) {
         return;
