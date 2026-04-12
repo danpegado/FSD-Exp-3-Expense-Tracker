@@ -2,11 +2,12 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
-const Expense = require('../models/Expense');
+const Expense = require('./models/Expense');
 
 dotenv.config();
 
 const app = express();
+let connectPromise = null;
 
 app.use(cors());
 app.use(express.json());
@@ -16,12 +17,20 @@ const connectDB = async () => {
         return;
     }
 
+    if (connectPromise) {
+        await connectPromise;
+        return;
+    }
+
     try {
-        await mongoose.connect(process.env.MONGO_URI);
+        connectPromise = mongoose.connect(process.env.MONGO_URI);
+        await connectPromise;
         console.log('MongoDB connected');
     } catch (error) {
         console.error('MongoDB connection error:', error.message);
         throw error;
+    } finally {
+        connectPromise = null;
     }
 };
 
@@ -86,7 +95,4 @@ app.delete('/expenses/:id', async (req, res) => {
     }
 });
 
-const PORT = process.env.PORT;
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
+module.exports = app;
