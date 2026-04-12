@@ -11,15 +11,28 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-mongoose
-    .connect(process.env.MONGO_URI)
-    .then(() => {
+const connectDB = async () => {
+    if (mongoose.connections[0].readyState) {
+        return;
+    }
+
+    try {
+        await mongoose.connect(process.env.MONGO_URI);
         console.log('MongoDB connected');
-    })
-    .catch((error) => {
+    } catch (error) {
         console.error('MongoDB connection error:', error.message);
-        process.exit(1);
-    });
+        throw error;
+    }
+};
+
+app.use(async (req, res, next) => {
+    try {
+        await connectDB();
+        next();
+    } catch (error) {
+        res.status(500).json({ message: 'Database connection failed' });
+    }
+});
 
 app.get('/expenses', async (req, res) => {
     try {
