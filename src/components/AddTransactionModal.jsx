@@ -1,7 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '../utils/categoryMap';
 
-const AddTransactionModal = ({ isOpen, onClose, onAdd }) => {
+const formatDateForInput = (value) => {
+  if (!value) return new Date().toISOString().split('T')[0];
+  const asString = String(value);
+  return asString.includes('T') ? asString.split('T')[0] : asString;
+};
+
+const AddTransactionModal = ({ isOpen, onClose, onAdd, initialData }) => {
   const [desc, setDesc] = useState('');
   const [amount, setAmount] = useState('');
   const [type, setType] = useState('expense');
@@ -9,26 +15,57 @@ const AddTransactionModal = ({ isOpen, onClose, onAdd }) => {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
 
   useEffect(() => {
-    setCategory(type === 'expense' ? EXPENSE_CATEGORIES[0] : INCOME_CATEGORIES[0]);
-  }, [type]);
+    if (!isOpen) return;
+
+    if (initialData) {
+      setDesc(initialData.description || '');
+      setAmount(initialData.amount ?? '');
+      setType(initialData.type || 'expense');
+      setCategory(initialData.category || EXPENSE_CATEGORIES[0]);
+      setDate(formatDateForInput(initialData.date));
+    } else {
+      setDesc('');
+      setAmount('');
+      setType('expense');
+      setCategory(EXPENSE_CATEGORIES[0]);
+      setDate(new Date().toISOString().split('T')[0]);
+    }
+  }, [isOpen, initialData]);
+
+  useEffect(() => {
+    const allowedCategories = type === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
+    if (!allowedCategories.includes(category)) {
+      setCategory(allowedCategories[0]);
+    }
+  }, [type, category]);
 
   if (!isOpen) return null;
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!desc.trim() || !amount || amount <= 0) return alert("Valid description and positive amount required.");
+    if (!amount || amount <= 0 || !category || !date) {
+      return alert('Amount, category, and date are required. Amount must be positive.');
+    }
 
-    onAdd({ id: Date.now(), description: desc, amount: parseFloat(amount), type, category, date });
+    onAdd({
+      _id: initialData?._id || initialData?.id,
+      amount: parseFloat(amount),
+      category,
+      date,
+      type,
+      description: desc.trim(),
+    });
     
     // Reset and close
-    setDesc(''); setAmount(''); onClose();
+    setDesc('');
+    setAmount('');
   };
 
   return (
     <div className="modal-overlay">
       <div className="cyber-card modal-content fade-in">
         <div className="modal-header">
-          <h3 className="card-title m-0">Add Transaction</h3>
+          <h3 className="card-title m-0">{initialData ? 'Edit Transaction' : 'Add Transaction'}</h3>
           <button className="btn-icon" onClick={onClose}>×</button>
         </div>
         
@@ -69,7 +106,7 @@ const AddTransactionModal = ({ isOpen, onClose, onAdd }) => {
           
           <div className="modal-actions">
             <button type="button" className="tech-button outline" onClick={onClose}>Cancel</button>
-            <button type="submit" className="tech-button">Save Entry</button>
+            <button type="submit" className="tech-button">{initialData ? 'Update Entry' : 'Save Entry'}</button>
           </div>
         </form>
       </div>

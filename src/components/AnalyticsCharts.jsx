@@ -1,8 +1,13 @@
 import React, { useMemo } from 'react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { CATEGORY_COLORS } from '../utils/categoryMap';
 
-const AnalyticsCharts = ({ transactions }) => {
+const COLORS = ['var(--primary)', 'var(--secondary)', '#00C49F', '#FFBB28', '#FF8042'];
+
+const AnalyticsCharts = ({ transactions, themeKey = 'classic' }) => {
+  const currencySymbol = window.localStorage.getItem('fincore_currency') || '₹';
+  const primaryColor = 'var(--accent-primary)';
+  const secondaryColor = 'var(--accent-secondary)';
+
   const expensesByCategory = useMemo(() => {
     const expenses = transactions.filter(t => t.type === 'expense');
     const categoryTotals = expenses.reduce((acc, curr) => {
@@ -28,7 +33,12 @@ const AnalyticsCharts = ({ transactions }) => {
     return Object.values(totals).sort((a, b) => a.name.localeCompare(b.name)).slice(-6);
   }, [transactions]);
 
-  const tooltipStyle = { backgroundColor: 'rgba(2, 2, 4, 0.95)', border: '1px solid #00e5ff', borderRadius: '8px', color: '#fff' };
+  const tooltipStyle = {
+    backgroundColor: '#1a1a24',
+    border: '1px solid rgba(255, 255, 255, 0.15)',
+    borderRadius: 0,
+    color: '#fff',
+  };
 
   return (
     <div className="analytics-grid">
@@ -36,13 +46,13 @@ const AnalyticsCharts = ({ transactions }) => {
         <h3 className="card-title">Expense Breakdown</h3>
         <ResponsiveContainer width="100%" height={250}>
           {expensesByCategory.length > 0 ? (
-            <PieChart>
+            <PieChart key={`pie-${themeKey}`}>
               <Pie data={expensesByCategory} cx="50%" cy="50%" innerRadius={60} outerRadius={85} dataKey="value" stroke="none">
                 {expensesByCategory.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={CATEGORY_COLORS[entry.name] || '#bd00ff'} />
+                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip contentStyle={tooltipStyle} itemStyle={{ color: '#fff' }} formatter={(value) => `₹ ${value}`} />
+              <Tooltip contentStyle={tooltipStyle} itemStyle={{ color: '#fff' }} formatter={(value) => `${currencySymbol} ${value}`} />
             </PieChart>
           ) : <p className="empty-state">No expenses found.</p>}
         </ResponsiveContainer>
@@ -52,11 +62,11 @@ const AnalyticsCharts = ({ transactions }) => {
         <h3 className="card-title">Monthly Trend</h3>
         <ResponsiveContainer width="100%" height={250}>
           {monthlyData.length > 0 ? (
-            <BarChart data={monthlyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+            <BarChart key={`bar-${themeKey}`} data={monthlyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <XAxis dataKey="name" stroke="#a0a0a0" fontSize={12} tickLine={false} />
               <Tooltip cursor={{fill: 'rgba(255,255,255,0.05)'}} contentStyle={tooltipStyle} />
-              <Bar dataKey="Income" fill="#00e5ff" radius={[4, 4, 0, 0]} maxBarSize={40} />
-              <Bar dataKey="Expense" fill="#bd00ff" radius={[4, 4, 0, 0]} maxBarSize={40} />
+              <Bar dataKey="Income" fill={primaryColor} radius={[4, 4, 0, 0]} maxBarSize={40} />
+              <Bar dataKey="Expense" fill={secondaryColor} radius={[4, 4, 0, 0]} maxBarSize={40} />
             </BarChart>
           ) : <p className="empty-state">No data available.</p>}
         </ResponsiveContainer>
